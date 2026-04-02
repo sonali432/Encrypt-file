@@ -4,9 +4,15 @@ const crypto = require('crypto');
 const app = express();
 app.use(express.json());
 
+// ✅ Encryption API
 app.post('/encrypt', (req, res) => {
     try {
-        const { data, publicKey } = req.body;
+        let { data, publicKey } = req.body;
+
+        // 🔥 Ensure PEM format (fix for your ASN1 errors)
+        if (!publicKey.includes('BEGIN PUBLIC KEY')) {
+            publicKey = formatPublicKey(publicKey);
+        }
 
         const encrypted = crypto.publicEncrypt(
             {
@@ -19,8 +25,16 @@ app.post('/encrypt', (req, res) => {
         res.send(encrypted.toString('base64'));
 
     } catch (e) {
+        console.error(e);
         res.status(500).send(e.toString());
     }
 });
 
-app.listen(10000, () => console.log('Server running'));
+// ✅ Helper to format key
+function formatPublicKey(key) {
+    return `-----BEGIN PUBLIC KEY-----\n${
+        key.replace(/\s+/g, '').match(/.{1,64}/g).join('\n')
+    }\n-----END PUBLIC KEY-----`;
+}
+
+app.listen(10000, () => console.log('Server running on port 10000'));
